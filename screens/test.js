@@ -5,7 +5,6 @@ import RenderCampsite from "../features/campsites/RenderCampsite";
 import { toggleFavorite } from "../features/favorites/favoritesSlice";
 import { Input, Rating } from "react-native-elements";
 import { FontAwesome } from "@expo/vector-icons";
-import { postComment } from "../features/comments/commentsSlice";
 
 const CampsiteInfoScreen = ({ route }) => {
   const { campsite } = route.params;
@@ -26,9 +25,7 @@ const CampsiteInfoScreen = ({ route }) => {
       text,
       campsiteId: campsite.id,
     };
-
-    dispatch(postComment(newComment));
-
+    console.log(newComment);
     setShowModal(!showModal);
   };
 
@@ -119,11 +116,11 @@ const CampsiteInfoScreen = ({ route }) => {
           </View>
           <View style={{ margin: 10 }}>
             <Button
-              color="#808080"
               title="Cancel"
+              color="#808080"
               onPress={() => {
                 setShowModal(!showModal);
-                resetForm;
+                resetForm();
               }}
             />
           </View>
