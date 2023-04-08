@@ -1,7 +1,8 @@
 import { ScrollView } from "react-native";
-import { useState } from "react";
 import { Card, Text, ListItem, Avatar } from "react-native-elements";
-import { PARTNERS } from "../shared/partners";
+import { useSelector } from "react-redux";
+import { baseUrl } from "../shared/baseUrl";
+import Loading from "../components/LoadingComponent";
 
 const Mission = () => {
   return (
@@ -22,7 +23,32 @@ const Mission = () => {
 };
 
 const AboutScreen = () => {
-  const [partners] = useState(PARTNERS);
+  const partners = useSelector((state) => state.partners);
+
+  if (partners.isLoading) {
+    return (
+      <ScrollView>
+        <Mission />
+        <Card>
+          <Card.Title>Community Partners</Card.Title>
+          <Card.Divider />
+          <Loading />
+        </Card>
+      </ScrollView>
+    );
+  }
+  if (partners.errMess) {
+    return (
+      <ScrollView>
+        <Mission />
+        <Card>
+          <Card.Title>Community Partners</Card.Title>
+          <Card.Divider />
+          <Text>{partners.errMess}</Text>
+        </Card>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView>
@@ -30,9 +56,9 @@ const AboutScreen = () => {
       <Card>
         <Card.Title>Community Partners</Card.Title>
         <Card.Divider />
-        {partners.map((partner) => (
+        {partners.partnersArray.map((partner) => (
           <ListItem key={partner.id}>
-            <Avatar rounded source={partner.image} />
+            <Avatar rounded source={{ uri: baseUrl + partner.image }} />
             <ListItem.Content>
               <ListItem.Title>{partner.name}</ListItem.Title>
               <ListItem.Subtitle>{partner.description}</ListItem.Subtitle>
