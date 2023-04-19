@@ -11,6 +11,7 @@ import {
 import * as Animatable from "react-native-animatable";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import * as Notifications from "expo-notifications";
 
 const ReservationScreen = () => {
   const [campers, setCampers] = useState(1);
@@ -36,12 +37,18 @@ const ReservationScreen = () => {
       [
         {
           text: "Cancel",
-          onPress: () => resetForm(),
+          onPress: () => {
+            console.log("Reservation Search Cancelled");
+            resetForm();
+          },
           style: "cancel",
         },
         {
           text: "OK",
-          onPress: () => console.log("OK Pressed"),
+          onPress: () => {
+            presentLocalNotification(date.toLocaleDateString("en-US"));
+            resetForm();
+          },
         },
       ],
       { cancelable: false }
@@ -53,6 +60,33 @@ const ReservationScreen = () => {
     setHikeIn(false);
     setDate(new Date());
     setShowCalendar(false);
+  };
+
+  const presentLocalNotification = async (reservationDate) => {
+    const sendNotification = () => {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+        }),
+      });
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Your Campsite Reservation Search",
+          body: `Search for ${reservationDate} requested`,
+        },
+        trigger: null,
+      });
+    };
+
+    let permissions = await Notifications.getPermissionsAsync();
+    if (!permissions.granted) {
+      permissions = await Notifications.requestPermissionsAsync();
+    }
+    if (permissions.granted) {
+      sendNotification();
+    }
   };
 
   return (
