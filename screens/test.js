@@ -1,169 +1,166 @@
-import { useState } from "react";
-import {
-  Text,
-  View,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Button,
-  Alert,
-} from "react-native";
-import { Picker } from "@react-native-picker/picker";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import * as Animatable from "react-native-animatable";
-import * as Notifications from "expo-notifications";
+import { useEffect, useState } from "react";
+import { View, StyleSheet, ScrollView } from "react-native";
+import { CheckBox, Input, Button, Icon } from "react-native-elements";
+import * as SecureStore from "expo-secure-store";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
-const ReservationScreen = () => {
-  const [campers, setCampers] = useState(1);
-  const [hikeIn, setHikeIn] = useState(false);
-  const [date, setDate] = useState(new Date());
-  const [showCalendar, setShowCalendar] = useState(false);
+const LoginTab = ({ navigation }) => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
 
-  const onDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || date;
-    setShowCalendar(Platform.OS === "ios");
-    setDate(currentDate);
-  };
-
-  const handleReservation = () => {
-    const message = `Number of Campers: ${campers}
-                            \nHike-In? ${hikeIn}
-                            \nDate: ${date.toLocaleDateString("en-US")}`;
-    Alert.alert(
-      "Begin Search?",
-      message,
-      [
-        {
-          text: "Cancel",
-          onPress: () => {
-            console.log("Reservation Search Canceled");
-            resetForm();
-          },
-          style: "cancel",
-        },
-        {
-          text: "OK",
-          onPress: () => {
-            presentLocalNotification(date.toLocaleDateString("en-US"));
-            resetForm();
-          },
-        },
-      ],
-      { cancelable: false }
-    );
-    console.log("campers:", campers);
-    console.log("hikeIn:", hikeIn);
-    console.log("date:", date);
-  };
-
-  const resetForm = () => {
-    setCampers(1);
-    setHikeIn(false);
-    setDate(new Date());
-    setShowCalendar(false);
-  };
-
-  const presentLocalNotification = async (reservationDate) => {
-    const sendNotification = () => {
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: true,
-        }),
-      });
-
-      Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Your Campsite Reservation Search",
-          body: `Search for ${reservationDate} requested`,
-        },
-        trigger: null,
-      });
-    };
-
-    let permissions = await Notifications.getPermissionsAsync();
-    if (!permissions.granted) {
-      permissions = await Notifications.requestPermissionsAsync();
+  const handleLogin = () => {
+    console.log("username:", username);
+    console.log("password:", password);
+    console.log("remember:", remember);
+    if (remember) {
+      SecureStore.setItemAsync(
+        "userinfo",
+        JSON.stringify({
+          username,
+          password,
+        })
+      ).catch((error) => console.log("Could not save user info", error));
+    } else {
+      SecureStore.deleteItemAsync("userinfo").catch((error) =>
+        console.log("Could not delete user info", error)
+      );
     }
-    if (permissions.granted) {
-      sendNotification();
-    }
+  };
+
+  useEffect(() => {
+    SecureStore.getItemAsync("userinfo").then((userdata) => {
+      const userinfo = JSON.parse(userdata);
+      if (userinfo) {
+        setUsername(userinfo.username);
+        setPassword(userinfo.password);
+        setRemember(true);
+      }
+    });
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <Input
+        placeholder="Username"
+        leftIcon={{ type: "font-awesome", name: "user-o" }}
+        onChangeText={(text) => setUsername(text)}
+        value={username}
+        containerStyle={styles.formInput}
+        leftIconContainerStyle={styles.formIcon}
+      />
+      <Input
+        placeholder="Password"
+        leftIcon={{ type: "font-awesome", name: "key" }}
+        onChangeText={(text) => setPassword(text)}
+        value={password}
+        containerStyle={styles.formInput}
+        leftIconContainerStyle={styles.formIcon}
+      />
+      <CheckBox
+        title="Remember Me"
+        center
+        checked={remember}
+        onPress={() => setRemember(!remember)}
+        containerStyle={styles.formCheckbox}
+      />
+      <View style={styles.formButton}>
+        <Button
+          onPress={() => handleLogin()}
+          title="Login"
+          color="#5637DD"
+          icon={
+            <Icon
+              name="sign-in"
+              type="font-awesome"
+              color="#fff"
+              iconStyle={{ marginRight: 10 }}
+            />
+          }
+          buttonStyle={{ backgroundColor: "#5637DD" }}
+        />
+      </View>
+      <View style={styles.formButton}>
+        <Button
+          onPress={() => navigation.navigate("Register")}
+          title="Register"
+          type="clear"
+          icon={
+            <Icon
+              name="user-plus"
+              type="font-awesome"
+              color="blue"
+              iconStyle={{ marginRight: 10 }}
+            />
+          }
+          titleStyle={{ color: "blue" }}
+        />
+      </View>
+    </View>
+  );
+};
+
+const RegisterTab = () => {
+  return <ScrollView></ScrollView>;
+};
+
+const Tab = createBottomTabNavigator();
+
+const LoginScreen = () => {
+  const tabBarOptions = {
+    activeBackgroundColor: "#5637DD",
+    inactiveBackgroundColor: "#CEC8FF",
+    activeTintColor: "#fff",
+    inactiveTintColor: "#808080",
+    labelStyle: { fontSize: 16 },
   };
 
   return (
-    <ScrollView>
-      <Animatable.View animation="zoomIn" duration={2000} delay={1000}>
-        <View style={styles.formRow}>
-          <Text style={styles.formLabel}>Number of Campers:</Text>
-          <Picker
-            style={styles.formItem}
-            selectedValue={campers}
-            onValueChange={(itemValue) => setCampers(itemValue)}
-          >
-            <Picker.Item label="1" value={1} />
-            <Picker.Item label="2" value={2} />
-            <Picker.Item label="3" value={3} />
-            <Picker.Item label="4" value={4} />
-            <Picker.Item label="5" value={5} />
-            <Picker.Item label="6" value={6} />
-          </Picker>
-        </View>
-        <View style={styles.formRow}>
-          <Text style={styles.formLabel}>Hike In?</Text>
-          <Switch
-            style={styles.formItem}
-            value={hikeIn}
-            trackColor={{ true: "#5637DD", false: null }}
-            onValueChange={(value) => setHikeIn(value)}
-          />
-        </View>
-        <View style={styles.formRow}>
-          <Text style={styles.formLabel}>Date:</Text>
-          <Button
-            onPress={() => setShowCalendar(!showCalendar)}
-            title={date.toLocaleDateString("en-US")}
-            color="#5637DD"
-            accessibilityLabel="Tap me to select a reservation date"
-          />
-        </View>
-        {showCalendar && (
-          <DateTimePicker
-            style={styles.formItem}
-            value={date}
-            mode="date"
-            display="default"
-            onChange={onDateChange}
-          />
-        )}
-        <View style={styles.formRow}>
-          <Button
-            onPress={() => handleReservation()}
-            title="Search Availability"
-            color="#5637DD"
-            accessibilityLabel="Tap me to search for available campsites to reserve"
-          />
-        </View>
-      </Animatable.View>
-    </ScrollView>
+    <Tab.Navigator tabBarOptions={tabBarOptions}>
+      <Tab.Screen
+        name="Login"
+        component={LoginTab}
+        options={{
+          tabBarIcon: (props) => {
+            return (
+              <Icon name="sign-in" type="font-awesome" color={props.color} />
+            );
+          },
+        }}
+      />
+      <Tab.Screen
+        name="Register"
+        component={RegisterTab}
+        options={{
+          tabBarIcon: (props) => {
+            return (
+              <Icon name="user-plus" type="font-awesome" color={props.color} />
+            );
+          },
+        }}
+      />
+    </Tab.Navigator>
   );
 };
 
 const styles = StyleSheet.create({
-  formRow: {
-    alignItems: "center",
+  container: {
     justifyContent: "center",
-    flex: 1,
-    flexDirection: "row",
     margin: 20,
   },
-  formLabel: {
-    fontSize: 18,
-    flex: 2,
+  formIcon: {
+    marginRight: 10,
   },
-  formItem: {
-    flex: 1,
+  formInput: {
+    padding: 10,
+  },
+  formCheckbox: {
+    margin: 10,
+    backgroundColor: null,
+  },
+  formButton: {
+    margin: 40,
   },
 });
 
-export default ReservationScreen;
+export default LoginScreen;
